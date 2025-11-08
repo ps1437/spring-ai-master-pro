@@ -1,0 +1,27 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: spring-ai-insights
+  ai:
+    openai:
+      api-key: 
+
+  datasource:
+    url: jdbc:h2:mem:syschoDb
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always         # always run data.sql after JPA schema creation
