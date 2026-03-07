@@ -1,0 +1,37 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: spring-ollama-rag
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+  ai:
+    ollama:
+      chat:
+        model: llama3.2:1b
+      embedding:
+        model: mxbai-embed-large
+    vectorstore:
+      qdrant:
+        initialize-schema: true
+        host: localhost
+        port: 6334
+        collection-name: syscho-tech
+
+  docker:
+    compose:
+      stop:
+        command: DOWN
+
+logging:
+  level:
+    org:
+      springframework:
+        ai:
+          chat:
+            client:
+              advisor: DEBUG
