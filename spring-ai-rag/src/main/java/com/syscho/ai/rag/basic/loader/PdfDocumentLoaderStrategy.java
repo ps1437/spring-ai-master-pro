@@ -1,4 +1,4 @@
-package com.syscho.ai.rag.loader;
+package com.syscho.ai.rag.basic.loader;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;

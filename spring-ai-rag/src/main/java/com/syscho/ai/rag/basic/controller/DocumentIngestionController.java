@@ -1,7 +1,7 @@
-package com.syscho.ai.rag.controller;
+package com.syscho.ai.rag.basic.controller;
 
-import com.syscho.ai.rag.dto.IngestionResult;
-import com.syscho.ai.rag.service.DocumentIngestionService;
+import com.syscho.ai.rag.basic.dto.IngestionResult;
+import com.syscho.ai.rag.basic.service.DocumentIngestionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

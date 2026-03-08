@@ -137,11 +137,7 @@ The factory picks it up automatically — **zero changes to existing code**.
 
 ```bash
 # Pull and run Ollama
-docker run -d \
-  --name ollama \
-  -p 11434:11434 \
-  -v ollama:/root/.ollama \
-  ollama/ollama
+docker run -d --name ollama -p 11434:11434 -v ollama:/root/.ollama ollama/ollama
 
 # Download required models
 docker exec -it ollama ollama pull llama3.2:1b
@@ -163,7 +159,7 @@ docker run -d \
   qdrant/qdrant
 ```
 
-Verify Qdrant dashboard: [http://localhost:6333/dashboard](http://localhost:6333/dashboard)
+Verify Qdrant dashboard: [http://localhost:6333/dashboard](http://localhost:6333/dashboard)![img_2.png](img_2.png)
 
 ---
 
@@ -325,7 +321,21 @@ String systemPrompt = """
     %s
     """.formatted(context);
 ```
+---
 
+## Test Query
+
+```
+GET /rag/database?question=What did I order last?&customerId=CUST001
+# → Aarav's boAt Airdopes placed on Jan 30
+
+GET /rag/database?question=Do I have any cancelled orders?&customerId=CUST002
+# → Priya's Lakme Face Serum cancelled
+
+GET /rag/database?question=What is in my cart?&customerId=CUST003
+# → Rohit's Noise ColorFit + Prestige Kettle
+
+```
 ---
 
 ## Run the Application

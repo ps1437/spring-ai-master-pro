@@ -7,11 +7,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
-
 @RestController
 @RequestMapping("/chat")
 @RequiredArgsConstructor
-public class ChatController {
+public class RagDatabaseChatController {
 
     private final ChatClient chatClient;
 

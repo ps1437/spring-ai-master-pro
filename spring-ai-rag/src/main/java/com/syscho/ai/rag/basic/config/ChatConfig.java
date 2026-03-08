@@ -1,4 +1,4 @@
-package com.syscho.ai.rag.config;
+package com.syscho.ai.rag.basic.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -21,7 +21,6 @@ public class ChatConfig {
 
     @Bean
     public ChatClient chatClient(ChatClient.Builder builder, ChatMemory chatMemory) {
-
         MessageChatMemoryAdvisor messageChatMemoryAdvisor = MessageChatMemoryAdvisor
                 .builder(chatMemory)
                 .build();

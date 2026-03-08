@@ -1,4 +1,4 @@
-package com.syscho.ai.rag.loader;
+package com.syscho.ai.rag.basic.loader;
 
 import org.springframework.stereotype.Component;
 
@@ -31,13 +31,6 @@ public class DocumentLoaderFactory {
                 ));
     }
 
-    /**
-     * Resolve the loader strategy for the given file path.
-     *
-     * @param filePath full path or filename with extension
-     * @return appropriate DocumentLoaderStrategy
-     * @throws UnsupportedOperationException if file type is not supported
-     */
     public DocumentLoaderStrategy getStrategy(String filePath) {
         String extension = extractExtension(filePath);
 

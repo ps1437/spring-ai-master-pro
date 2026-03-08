@@ -1,4 +1,4 @@
-package com.syscho.ai.rag.dto;
+package com.syscho.ai.rag.basic.dto;
 
 /**
  * Result record for each ingestion operation.
