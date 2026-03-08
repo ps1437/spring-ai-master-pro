@@ -1,8 +1,9 @@
-# 🤖 Spring AI Customer Support Chat — with Memory
+# 🤖 Spring AI Customer Support Chat — with Memory & Streaming
 
 An AI-powered e-commerce customer support chatbot built with **Spring Boot**, **Spring AI**, **Ollama (llama3.2)**, and **JDBC-backed Chat Memory (H2)**.
 
 The bot remembers full conversation context per customer session — no need to repeat order IDs or previous requests.
+Supports both **blocking** (full response at once) and **streaming** (token-by-token, like ChatGPT) response modes.
 
 ---
 
@@ -128,6 +129,12 @@ Password  : (leave blank)
     <scope>runtime</scope>
 </dependency>
 
+<!-- Reactive Streaming (Flux) -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-webflux</artifactId>
+</dependency>
+
 <!-- Swagger -->
 <dependency>
     <groupId>org.springdoc</groupId>
@@ -160,6 +167,15 @@ The following customers and orders are auto-loaded on startup via `data.sql`:
 ---
 
 ## 🌐 API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/support/chat` | Blocking — full response at once |
+| `GET` | `/support/stream` | Streaming — token by token (SSE) |
+| `DELETE` | `/support/session/{customerId}` | Clear chat memory for session |
+| `GET` | `/chat` | General purpose assistant (blocking) |
+
+---
 
 ### 1. Customer Support Chat — `POST /support/chat`
 
@@ -198,6 +214,61 @@ Spring AI is a framework that simplifies building AI-powered applications
 using Spring Boot. It provides abstractions over LLM providers like Ollama,
 OpenAI, and more...
 ```
+
+---
+
+### 3. Streaming Support Chat — `GET /support/stream`
+
+Returns AI response **token by token** as Server-Sent Events (SSE).
+
+**Request:**
+```
+GET /support/stream?customerId=cust-001&message=Where+is+my+order
+```
+
+**Response (streamed tokens):**
+```
+Hi
+ John
+!
+ 👋
+ Your
+ order
+ ORD
+-001
+...
+```
+> Tokens arrive one by one — creates a real-time typing effect.
+
+**curl test:**
+```bash
+curl -N "http://localhost:8089/support/stream?customerId=cust-001&message=Where+is+my+order"
+```
+
+**Browser (EventSource):**
+```javascript
+const source = new EventSource(
+  "http://localhost:8089/support/stream?customerId=cust-001&message=Where+is+my+order"
+);
+
+source.onmessage = (e) => {
+  process.stdout.write(e.data); // tokens appear one by one
+};
+
+source.onerror = () => source.close();
+```
+
+---
+
+### Blocking vs Streaming — When to Use
+
+| | `POST /support/chat` | `GET /support/stream` |
+|---|---|---|
+| Response | Full text at once | Token by token |
+| Protocol | HTTP JSON | Server-Sent Events |
+| Best for | API integrations | Browser / chat UI |
+| Feels like | Form submit | ChatGPT typing effect |
+| Method in service | `.call().content()` | `.stream().content()` |
 
 ---
 
@@ -475,35 +546,43 @@ logging:
 ## 🏗️ Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  REST Layer                      │
-│   SupportController    ChatController            │
-└──────────────┬──────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                    REST Layer                        │
+│   SupportController          ChatController          │
+│   POST /support/chat         GET /chat               │
+│   GET  /support/stream (SSE)                         │
+└──────────────┬───────────────────────────────────────┘
                │
-┌──────────────▼──────────────────────────────────┐
-│              Service Layer                       │
-│   SupportChatService  ──►  OrderService          │
-│        │                       │                 │
-│        │ intent detection       │ DB updates      │
-└────────┼───────────────────────┼─────────────────┘
-         │                       │
-┌────────▼───────────────────────▼─────────────────┐
-│              Spring AI Layer                     │
-│   ChatClient (supportChatClient)                 │
-│   MessageChatMemoryAdvisor ──► H2 (chat memory)  │
-│   SimpleLoggerAdvisor                            │
-└──────────────┬───────────────────────────────────┘
+┌──────────────▼───────────────────────────────────────┐
+│               Service Layer                          │
+│   SupportChatService                                 │
+│   ├── chat()          → buildPrompt().call()         │
+│   ├── stream()        → buildPrompt().stream()       │
+│   ├── handleIntent()  → DB action before LLM call    │
+│   └── buildPrompt()   → shared prompt builder        │
+│                  │                                   │
+│            OrderService  ──► OrderRepository         │
+└──────────────┬───────────────────────────────────────┘
                │
-┌──────────────▼───────────────────────────────────┐
-│           Ollama (llama3.2:1b)                   │
-│           localhost:11434                        │
-└──────────────────────────────────────────────────┘
+┌──────────────▼───────────────────────────────────────┐
+│              Spring AI Layer                         │
+│   ChatClient (supportChatClient)                     │
+│   ├── .call().content()    → String                  │
+│   └── .stream().content()  → Flux<String>            │
+│   MessageChatMemoryAdvisor ──► H2 (chat memory)      │
+│   SimpleLoggerAdvisor                                │
+└──────────────┬───────────────────────────────────────┘
                │
-┌──────────────▼───────────────────────────────────┐
-│           Data Layer (H2)                        │
-│   customers table   orders table                 │
-│   SPRING_AI_CHAT_MEMORY table                    │
-└──────────────────────────────────────────────────┘
+┌──────────────▼───────────────────────────────────────┐
+│            Ollama (llama3.2:1b)                      │
+│            localhost:11434                           │
+└──────────────┬───────────────────────────────────────┘
+               │
+┌──────────────▼───────────────────────────────────────┐
+│            Data Layer (H2)                           │
+│   customers table   orders table                     │
+│   SPRING_AI_CHAT_MEMORY table                        │
+└──────────────────────────────────────────────────────┘
 ```
 
 ---
