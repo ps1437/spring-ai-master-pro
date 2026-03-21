@@ -5,51 +5,53 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.12-SNAPSHOT</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <version>3.4.1</version>
+        <relativePath/>
     </parent>
+
     <groupId>com.syscho.ai</groupId>
     <artifactId>spring-ai-chat-memory</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>spring-ai-chat-memory</name>
     <description>Demo project for Spring Boot</description>
-    <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
+
     <properties>
         <java.version>21</java.version>
-        <spring-ai.version>1.1.2</spring-ai.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
     </properties>
+
     <dependencies>
+        <!-- Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+        <!-- WebFlux for Flux/SSE streaming -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <!-- Swagger UI -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.8.16</version>
+            <version>2.8.6</version>
         </dependency>
 
+        <!--  OpenAI (NVIDIA uses OpenAI-compatible API) — NO explicit version, let BOM manage -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
+        <!-- Chat Memory with JDBC -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-chat-memory</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-ollama</artifactId>
-        </dependency>
+        <!-- JDBC + JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -58,29 +60,30 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
+
+        <!-- H2 in-memory DB for chat memory storage -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- Reactive Streams support for Flux -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
 
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <!-- ✅ BOM manages ALL spring-ai versions consistently -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -101,25 +104,5 @@
             </plugin>
         </plugins>
     </build>
-    <repositories>
-        <repository>
-            <id>spring-snapshots</id>
-            <name>Spring Snapshots</name>
-            <url>https://repo.spring.io/snapshot</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>spring-snapshots</id>
-            <name>Spring Snapshots</name>
-            <url>https://repo.spring.io/snapshot</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </pluginRepository>
-    </pluginRepositories>
 
 </project>

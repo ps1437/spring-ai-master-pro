@@ -6,15 +6,16 @@ spring:
     name: spring-ai-chat-memory
 
   ai:
-    ollama:
-      base-url: http://localhost:11434
+    openai:
+      api-key: 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
+      base-url: https://integrate.api.nvidia.com
       chat:
-        model: llama3.2:1b
         options:
-          temperature: 0.7
-          num-ctx: 4096
-      embedding:
-        model: nomic-embed-text
+          model: openai/gpt-oss-20b
+          temperature: 1.0
+          top-p: 1.0
+          max-tokens: 4096
+          stream-usage: false
 
     chat:
       memory:
