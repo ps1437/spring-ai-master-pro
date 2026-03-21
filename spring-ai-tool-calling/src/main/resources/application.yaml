@@ -1,0 +1,70 @@
+server:
+  port: 8089
+
+weather:
+  api:
+    key: ${WEATHER_API_KEY}
+    base-url: https://api.weatherapi.com/v1
+
+spring:
+  application:
+    name: spring-ai-tools
+
+  ai:
+    openai:
+      api-key: ${OPEN_AI_KEY}
+      base-url: https://integrate.api.nvidia.com
+      chat:
+        options:
+          model: openai/gpt-oss-20b
+          temperature: 1.0
+          top-p: 1.0
+          max-tokens: 4096
+          stream-usage: false
+
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always
+
+  # ── DataSource (H2) ──────────────────────────────────
+  datasource:
+    url: jdbc:h2:mem:shopdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # ── H2 Console ───────────────────────────────────────
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # ── Schema + Data Init ───────────────────────────────
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+  # ── JPA ──────────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    root: INFO
+    com.syscho.ai: DEBUG
+    org:
+      springframework:
+        ai:
+          chat:
+            client:
+              advisor: DEBUG
+
