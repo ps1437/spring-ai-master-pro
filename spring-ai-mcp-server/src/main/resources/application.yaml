@@ -1,0 +1,59 @@
+server:
+  port: 8089
+
+
+spring:
+  application:
+    name: spring-ai-mcp-server
+  main:
+    web-application-type: NONE
+    banner-mode: OFF
+
+  datasource:
+    url: jdbc:h2:mem:traveldb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  ai:
+    openai:
+      api-key: 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
+      base-url: https://integrate.api.nvidia.com
+      chat:
+        options:
+          model: openai/gpt-oss-20b
+          temperature: 1.0
+          top-p: 1.0
+          max-tokens: 4096
+          stream-usage: false
+    mcp:
+      server:
+        enabled: true
+        name: spring-ai-custom-mcp
+        type: SYNC
+        stdio: true
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always
+
+
+logging:
+  level:
+    root: ERROR
+
+
