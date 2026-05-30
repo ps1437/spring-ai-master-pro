@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>AI Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        #messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #messages::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+
+        #sessionsList::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #sessionsList::-webkit-scrollbar-thumb {
+            background: #e5e7eb;
+            border-radius: 2px;
+        }
+
+        .session-active {
+            background: #eff6ff;
+        }
+
+        /* ==========================
+           Chat Message Styling
+           ========================== */
+
+        .msg-bubble {
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .msg-bubble p {
+            margin: 0 0 4px;
+        }
+
+        .msg-bubble p:last-child {
+            margin-bottom: 0;
+        }
+
+        .msg-bubble ul,
+        .msg-bubble ol {
+            margin: 4px 0;
+            padding-left: 20px;
+        }
+
+        .msg-bubble li {
+            margin: 2px 0;
+        }
+
+        .msg-bubble h1,
+        .msg-bubble h2,
+        .msg-bubble h3,
+        .msg-bubble h4 {
+            margin: 8px 0 4px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .msg-bubble h1 {
+            font-size: 1.25rem;
+        }
+
+        .msg-bubble h2 {
+            font-size: 1.15rem;
+        }
+
+        .msg-bubble h3 {
+            font-size: 1.05rem;
+        }
+
+        .msg-bubble pre {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+
+        .msg-bubble code {
+            font-family: Consolas, Monaco, monospace;
+            font-size: 12px;
+        }
+
+        .msg-bubble p code,
+        .msg-bubble li code {
+            background: #f3f4f6;
+            padding: 2px 4px;
+            border-radius: 4px;
+            color: #dc2626;
+        }
+
+        .msg-bubble blockquote {
+            border-left: 3px solid #d1d5db;
+            padding-left: 12px;
+            margin: 8px 0;
+            color: #6b7280;
+        }
+
+        .msg-bubble table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0;
+        }
+
+        .msg-bubble th,
+        .msg-bubble td {
+            border: 1px solid #e5e7eb;
+            padding: 6px 8px;
+            text-align: left;
+        }
+
+        .msg-bubble th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+
+        /* Show delete button on hover */
+
+        .session-row .del-btn {
+            opacity: 0;
+            transition: opacity .15s;
+        }
+
+        .session-row:hover .del-btn {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen antialiased overflow-hidden">
+
+<div class="h-screen flex">
+
+    <!-- ── Sidebar ── -->
+    <aside class="w-60 bg-white border-r flex flex-col flex-shrink-0">
+        <div class="flex items-center justify-between px-4 py-3 border-b">
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/>
+                </svg>
+                <span class="font-semibold text-sm">Chats</span>
+            </div>
+            <button id="newSession" class="text-xs font-medium text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded transition">+ New</button>
+        </div>
+
+        <div id="sessionsList" class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5"></div>
+
+        <div class="px-3 py-3 border-t flex flex-col gap-1.5">
+            <!-- Delete ALL sessions -->
+            <button id="deleteAllSessions"
+                    class="w-full text-xs text-red-500 hover:text-red-700 hover:bg-red-50 rounded py-1.5 transition flex items-center justify-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                Delete All Sessions
+            </button>
+        </div>
+    </aside>
+
+    <!-- ── Main ── -->
+    <div class="flex-1 flex flex-col min-w-0">
+
+        <main id="messages" class="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50" aria-live="polite"></main>
+
+        <div class="bg-white border-t px-4 py-2 flex-shrink-0">
+            <form id="composer">
+                <div class="flex items-end gap-2 bg-gray-100 rounded-2xl px-3 py-2">
+          <textarea id="input" rows="1" placeholder="Message AI Chat…"
+                    class="flex-1 bg-transparent resize-none focus:outline-none text-sm py-1 text-gray-800 placeholder-gray-400"
+                    style="max-height:80px; overflow-y:hidden"></textarea>
+                    <button id="sendBtn" type="submit"
+                            class="mb-0.5 flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-full w-6 h-6 flex items-center justify-center transition">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    window.sessionId = /*[[${sessionId}]]*/ 'default-session';
+</script>
+
+<script>
+    (() => {
+      const sessionId     = window.sessionId || 'default-session';
+      const messagesEl    = document.getElementById('messages');
+      const form          = document.getElementById('composer');
+      const input         = document.getElementById('input');
+      const sendBtn       = document.getElementById('sendBtn');
+      const newSessionBtn = document.getElementById('newSession');
+      const sessionsListEl= document.getElementById('sessionsList');
+      const deleteAllBtn  = document.getElementById('deleteAllSessions');
+
+      // ── Helpers ──────────────────────────────────────────────────
+
+      function formatTime(ms) {
+        return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+     function renderMarkdown(text) {
+    try {
+        marked.setOptions({
+            breaks: false,
+            gfm: true
+        });
+
+        const html = marked.parse(text);
+
+        return DOMPurify.sanitize(html);
+    } catch (e) {
+        return text;
+    }
+}
+
+      function styleCodeBlocks(el) {
+        el.querySelectorAll('pre').forEach(p => p.classList.add('bg-gray-900','text-white','p-3','rounded','overflow-auto','text-xs'));
+        el.querySelectorAll('code').forEach(c => c.classList.add('font-mono','text-xs'));
+      }
+
+      function confirm(msg) {
+        return window.confirm(msg);
+      }
+
+      // ── Append message ───────────────────────────────────────────
+
+      function appendMessage(role, text, timestamp) {
+        const isUser = role === 'user';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-end gap-2 ' + (isUser ? 'flex-row-reverse' : '');
+
+        const av = document.createElement('div');
+        av.className = 'w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold '
+          + (isUser ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700');
+        av.textContent = isUser ? 'U' : 'AI';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble px-3 py-2 rounded-2xl max-w-[72%] '
+          + (isUser ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-white text-gray-900 border rounded-bl-sm');
+
+        if (!isUser) { bubble.innerHTML = renderMarkdown(text); styleCodeBlocks(bubble); }
+        else bubble.textContent = text;
+
+        const time = document.createElement('div');
+        time.className = 'text-[10px] text-gray-400 mb-1 flex-shrink-0';
+        time.textContent = timestamp ? formatTime(timestamp) : '';
+
+        wrapper.appendChild(av);
+        wrapper.appendChild(bubble);
+        wrapper.appendChild(time);
+        messagesEl.appendChild(wrapper);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return { wrapper, bubble, av, time };
+      }
+
+      // ── Assistant placeholder ────────────────────────────────────
+
+      function appendAssistantPlaceholder() {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-end gap-2';
+
+        const av = document.createElement('div');
+        av.className = 'w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center bg-gray-200';
+        av.innerHTML = `<svg class="w-4 h-4 animate-spin text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+        </svg>`;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble px-3 py-2 rounded-2xl rounded-bl-sm bg-white border text-gray-400 text-sm';
+        bubble.textContent = '…';
+
+        const time = document.createElement('div');
+        time.className = 'text-[10px] text-gray-400 mb-1 flex-shrink-0';
+
+        wrapper.appendChild(av); wrapper.appendChild(bubble); wrapper.appendChild(time);
+        messagesEl.appendChild(wrapper);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return { wrapper, bubble, av, time };
+      }
+
+      // ── Delete a single session ──────────────────────────────────
+
+      function deleteSession(id) {
+        fetch(`/api/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' })
+          .then(() => {
+            // if deleted session is active, go home
+            if (id === sessionId) window.location.href = '/chat';
+            else fetchSessions();
+          })
+          .catch(console.error);
+      }
+
+      // ── Fetch sessions ───────────────────────────────────────────
+
+      function fetchSessions() {
+        if (!sessionsListEl) return;
+        fetch('/api/sessions')
+          .then(r => r.json())
+          .then(list => {
+            sessionsListEl.innerHTML = '';
+            if (list.length === 0) {
+              sessionsListEl.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No sessions</p>';
+              return;
+            }
+            list.forEach(s => {
+              const row = document.createElement('div');
+              row.className = 'session-row group w-full flex items-center gap-1 rounded-lg '
+                + (s.id === sessionId ? 'session-active' : 'hover:bg-gray-100') + ' transition';
+
+              // Navigate button (most of the row)
+              const navBtn = document.createElement('button');
+              navBtn.className = 'flex-1 min-w-0 text-left px-2 py-2 flex items-center gap-2 text-sm';
+              navBtn.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                  ${(s.title || 'C')[0].toUpperCase()}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="truncate font-medium text-xs">${s.title || 'Chat'}</div>
+                  <div class="text-[11px] text-gray-400 truncate">${s.preview || 'No messages'}</div>
+                </div>`;
+              navBtn.addEventListener('click', () => {
+                window.location.href = `/chat?sessionId=${encodeURIComponent(s.id)}`;
+              });
+
+              // Delete button (appears on hover)
+              const delBtn = document.createElement('button');
+              delBtn.className = 'del-btn flex-shrink-0 mr-1 p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition';
+              delBtn.title = 'Delete session';
+              delBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7H5M10 11v6M14 11v6M5 7l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12"/>
+              </svg>`;
+              delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (window.confirm(`Delete "${s.title || 'this session'}"?`)) deleteSession(s.id);
+              });
+
+              row.appendChild(navBtn);
+              row.appendChild(delBtn);
+              sessionsListEl.appendChild(row);
+            });
+          })
+          .catch(err => console.error('sessions fetch', err));
+      }
+
+      // ── Fetch history ────────────────────────────────────────────
+
+      function fetchHistory() {
+        fetch(`/api/history?sessionId=${encodeURIComponent(sessionId)}`)
+          .then(r => r.json())
+          .then(list => {
+            messagesEl.innerHTML = '';
+            if (list.length === 0) {
+              messagesEl.innerHTML = `<div class="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
+                <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-500 flex items-center justify-center text-xl font-bold">AI</div>
+                <p class="text-sm">How can I help you today?</p>
+              </div>`;
+              return;
+            }
+            list.forEach(msg => appendMessage(msg.role, msg.content, msg.timestamp));
+          })
+          .catch(console.error);
+      }
+
+      // ── Submit ───────────────────────────────────────────────────
+
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+
+        // clear empty state
+        const empty = messagesEl.querySelector('.flex.flex-col.items-center');
+        if (empty) messagesEl.innerHTML = '';
+
+        appendMessage('user', text, Date.now());
+        input.value = '';
+        input.style.height = 'auto';
+        sendBtn.disabled = true;
+
+        const placeholder = appendAssistantPlaceholder();
+
+        fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `sessionId=${encodeURIComponent(sessionId)}&message=${encodeURIComponent(text)}`
+        })
+        .then(r => r.text())
+        .then(reply => {
+          placeholder.bubble.innerHTML = renderMarkdown(reply);
+          placeholder.bubble.classList.remove('text-gray-400');
+          placeholder.bubble.classList.add('text-gray-900');
+          styleCodeBlocks(placeholder.bubble);
+          placeholder.av.textContent = 'AI';
+          placeholder.av.classList.add('text-gray-700', 'text-xs', 'font-bold');
+          placeholder.time.textContent = formatTime(Date.now());
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        })
+        .catch(err => {
+          placeholder.bubble.textContent = '(error) ' + err.message;
+          placeholder.av.textContent = 'AI';
+        })
+        .finally(() => { sendBtn.disabled = false; });
+      });
+
+      // ── Textarea auto-grow ───────────────────────────────────────
+
+      input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+      });
+
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+      });
+
+
+      // ── Delete ALL sessions ───────────────────────────────────────
+
+      deleteAllBtn.addEventListener('click', () => {
+        if (!window.confirm('Delete ALL sessions? This cannot be undone.')) return;
+        fetch('/api/sessions/all', { method: 'DELETE' })
+          .then(() => window.location.href = '/chat')
+          .catch(console.error);
+      });
+
+      // ── New session ──────────────────────────────────────────────
+
+      if (newSessionBtn) {
+        newSessionBtn.addEventListener('click', () => {
+          fetch('/api/sessions', { method: 'POST' })
+            .then(r => r.text())
+            .then(id => { window.location.href = `/chat?sessionId=${encodeURIComponent(id)}`; })
+            .catch(console.error);
+        });
+      }
+
+      // ── Init ─────────────────────────────────────────────────────
+
+      fetchSessions();
+      fetchHistory();
+
+      window.addEventListener('error', e => console.error('window error', e.error || e.message));
+    })();
+</script>
+
+</body>
+</html>
